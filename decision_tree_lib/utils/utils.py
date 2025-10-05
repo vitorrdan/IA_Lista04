@@ -30,7 +30,7 @@ def calculate_entropy(y: pd.Series) -> float:
 
 def calculate_gini_index(y: pd.Series) -> float:
     """
-    [cite_start]Calcula o índice de Gini de um conjunto de rótulos. [cite: 51]
+    Calcula o índice de Gini de um conjunto de rótulos. 
 
     O índice Gini também mede a impureza de um conjunto de dados.
     Fórmula: Gini(S) = 1 - sum(p_i^2)
@@ -51,8 +51,8 @@ def calculate_gini_index(y: pd.Series) -> float:
 
 def calculate_information_gain(data: pd.DataFrame, attribute_name: str, target_name: str) -> float:
     """
-    [cite_start]Calcula o ganho de informação de um atributo. [cite: 51]
-    [cite_start]É a métrica usada pelo algoritmo ID3. [cite: 9]
+    Calcula o ganho de informação de um atributo. 
+    É a métrica usada pelo algoritmo ID3. 
     
     Args:
         data: O DataFrame completo.
@@ -81,8 +81,8 @@ def calculate_information_gain(data: pd.DataFrame, attribute_name: str, target_n
 
 def calculate_gain_ratio(data: pd.DataFrame, attribute_name: str, target_name: str) -> float:
     """
-    [cite_start]Calcula a razão de ganho de um atributo. [cite: 51]
-    [cite_start]É a métrica usada pelo algoritmo C4.5. [cite: 10]
+    Calcula a razão de ganho de um atributo. 
+    É a métrica usada pelo algoritmo C4.5. 
 
     Args:
         data: O DataFrame completo.
@@ -107,3 +107,52 @@ def calculate_gain_ratio(data: pd.DataFrame, attribute_name: str, target_name: s
     # 4. Retornar a razão
     gain_ratio = information_gain / split_info
     return gain_ratio
+
+def find_best_continuous_split(data: pd.DataFrame, attribute_name: str, target_name: str) -> tuple:
+    """
+    Encontra o melhor limiar para dividir um atributo CONTÍNUO.
+    Implementa a "varredura por limiar" testando os pontos médios.
+
+    Args:
+        data: DataFrame com os dados.
+        attribute_name: Nome do atributo contínuo.
+        target_name: Nome do atributo alvo.
+
+    Returns:
+        Uma tupla contendo (melhor_limiar, maior_ganho_de_informacao).
+    """
+    total_entropy = calculate_entropy(data[target_name])
+    unique_values = sorted(data[attribute_name].unique())
+    best_threshold = None
+    max_info_gain = -1
+
+    if len(unique_values) < 2:
+        return None, -1
+
+    for i in range(len(unique_values) - 1):
+        threshold = (unique_values[i] + unique_values[i+1]) / 2
+        
+        left_subset = data[data[attribute_name] <= threshold]
+        right_subset = data[data[attribute_name] > threshold]
+
+        # Ignorar divisões que não separam os dados
+        if len(left_subset) == 0 or len(right_subset) == 0:
+            continue
+            
+        # Calcular entropia ponderada da divisão binária
+        weight_left = len(left_subset) / len(data)
+        entropy_left = calculate_entropy(left_subset[target_name])
+        
+        weight_right = len(right_subset) / len(data)
+        entropy_right = calculate_entropy(right_subset[target_name])
+        
+        weighted_entropy = (weight_left * entropy_left) + (weight_right * entropy_right)
+        
+        # Calcular o ganho de informação para esta divisão
+        current_info_gain = total_entropy - weighted_entropy
+        
+        if current_info_gain > max_info_gain:
+            max_info_gain = current_info_gain
+            best_threshold = threshold
+            
+    return best_threshold, max_info_gain
