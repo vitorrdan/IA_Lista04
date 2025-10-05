@@ -1,4 +1,3 @@
-# decision_tree_lib/preprocessing.py
 import pandas as pd
 
 def clean_titanic_data(df: pd.DataFrame) -> pd.DataFrame:

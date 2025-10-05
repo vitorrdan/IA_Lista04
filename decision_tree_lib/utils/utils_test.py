@@ -1,5 +1,4 @@
 import pandas as pd
-import io
 from utils import *
 
 df_play_tennis = pd.read_csv("../../data/JogarTênis.csv")

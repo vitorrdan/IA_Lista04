@@ -1,6 +1,3 @@
-# decision_tree_lib/utils.py
-# decision_tree_lib/utils.py
-
 import numpy as np
 import pandas as pd
 
@@ -156,3 +153,45 @@ def find_best_continuous_split(data: pd.DataFrame, attribute_name: str, target_n
             best_threshold = threshold
             
     return best_threshold, max_info_gain
+
+
+def find_best_continuous_split_gini(data: pd.DataFrame, attribute_name: str, target_name: str) -> tuple:
+    """
+    Encontra o melhor limiar para um atributo contínuo usando o Ganho Gini.
+    """
+    unique_values = sorted(data[attribute_name].unique())
+    best_threshold = None
+    max_gini_gain = -1
+
+    if len(unique_values) < 2:
+        return None, -1
+
+    # Gini do nó pai
+    parent_gini = calculate_gini_index(data[target_name])
+
+    for i in range(len(unique_values) - 1):
+        threshold = (unique_values[i] + unique_values[i+1]) / 2
+        
+        left_subset = data[data[attribute_name] <= threshold]
+        right_subset = data[data[attribute_name] > threshold]
+
+        if len(left_subset) == 0 or len(right_subset) == 0:
+            continue
+            
+        # Gini ponderado dos filhos
+        gini_left = calculate_gini_index(left_subset[target_name])
+        gini_right = calculate_gini_index(right_subset[target_name])
+        
+        weight_left = len(left_subset) / len(data)
+        weight_right = len(right_subset) / len(data)
+        
+        weighted_gini_children = (weight_left * gini_left) + (weight_right * gini_right)
+        
+        # Ganho Gini = Gini(pai) - Gini_ponderado(filhos)
+        current_gini_gain = parent_gini - weighted_gini_children
+        
+        if current_gini_gain > max_gini_gain:
+            max_gini_gain = current_gini_gain
+            best_threshold = threshold
+            
+    return best_threshold, max_gini_gain
