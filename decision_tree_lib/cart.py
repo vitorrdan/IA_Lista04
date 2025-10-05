@@ -21,6 +21,14 @@ class CART:
         data = X.copy()
         data[y.name] = y
         self.tree_ = self._build_tree(data, y.name, depth=0)
+        
+      # --- MÉTODO PÚBLICO DE PREDIÇÃO (ESTAVA FALTANDO) ---
+    def predict(self, X: pd.DataFrame) -> list:
+        """
+        Faz previsões para um conjunto de dados X.
+        """
+        rows = X.to_dict(orient='records')
+        return [self._predict_single(row, self.tree_) for row in rows]    
 
     def _calculate_gini_gain(self, data, split_subsets, target_name):
         """Calcula o Ganho Gini para uma dada divisão binária."""
@@ -104,31 +112,27 @@ class CART:
         return tree
     
     # capacidade de predição
-    def predict(self, X: pd.DataFrame) -> list:
-        rows = X.to_dict(orient='records')
-        return [self._predict_single(row, self.tree_) for row in rows]
-
     def _predict_single(self, row: dict, tree: dict):
+        # Caso base: se não for um dicionário, é uma folha (predição).
         if not isinstance(tree, dict):
             return tree
 
+        # Pega a pergunta do nó atual. Ex: "Sex <= 0.50"
         question = next(iter(tree))
 
-        if "<=" in question: # Split contínuo
+        # Teste para split contínuo
+        if "<=" in question:
             feature, threshold = question.split(' <= ')
             threshold = float(threshold)
             branch = 'True' if row[feature] <= threshold else 'False'
         
-        elif "in" in question: # Split categórico
-            # Usando expressão regular para extrair o atributo e o conjunto de forma segura
+        # Teste para split categórico
+        elif "in" in question:
             match = re.match(r"(\w+)\s+in\s+({.*})", question)
             feature = match.group(1)
-            # A função eval() interpreta a string do conjunto como código Python
             value_set = eval(match.group(2)) 
-            
             branch = 'True' if row[feature] in value_set else 'False'
         
-        else: # Fallback para outros casos, se houver
-            return list(tree.values())[0] # Retorna a primeira folha que encontrar
-
+        
+        # Navega para o próximo nó (sub-árvore) usando o galho correto ('True' ou 'False')
         return self._predict_single(row, tree[question][branch])
